@@ -74,7 +74,7 @@ def read_config():
   PATH_logs = config.get('Folders/Files', 'PATH_logs')
 
   # Reading Language settings
-  separators = config.get('Language', 'separators').strip('"').split(' ')
+  separators = "; . [ ] ( ) ~ ! - + & * / % < > ^ | ? { } = # , \" \\ : $ ' ` @" #config.get('Language', 'separators').strip('"').split(' ')
   comment_inline = re.escape(config.get('Language', 'comment_inline'))
   comment_inline_pattern = comment_inline + '.*?$'
   comment_open_tag = re.escape(config.get('Language', 'comment_open_tag'))
@@ -178,7 +178,7 @@ def tokenize_blocks(file_string, comment_inline_pattern, comment_open_close_patt
   if '.py' in file_extensions:
     (block_linenos, blocks) = extractPythonFunction.getFunctions(file_string, logging, file_path)
   if '.java' in file_extensions:
-    (block_linenos, blocks, experimental_values) = extractJavaFunction.getFunctions(file_string, logging, file_path, separators)
+    (block_linenos, blocks, experimental_values) = extractJavaFunction.getFunctions(file_string, logging, file_path, separators, comment_inline_pattern)
 
   if block_linenos is None:
     logging.info('Returning None on tokenize_blocks for file %s.' % (file_path))
@@ -340,9 +340,9 @@ def process_file_contents(file_string, proj_id, file_id, container_path,
         # Adjust the blocks stats written to the files, file stats start with a letter 'b'
         FILE_stats_file.write('b' + ','.join([proj_id,block_id,'\"'+block_hash+'\"', str(block_lines),str(block_LOC),str(block_SLOC),str(start_line),str(end_line)]) + '\n')
         if len(experimental_values) == 0:
-          FILE_tokens_file.write(','.join([proj_id,block_id,str(tokens_count_total),str(tokens_count_unique),token_hash+tokens]) + '\n')
+          FILE_tokens_file.write('~~'.join([proj_id,block_id,str(tokens_count_total),str(tokens_count_unique),token_hash+tokens]) + '\n')
         else:
-          FILE_tokens_file.write(','.join([proj_id,block_id,str(tokens_count_total),str(tokens_count_unique),experimental_values,token_hash+tokens]) + '\n')
+          FILE_tokens_file.write('~~'.join([proj_id,block_id,str(tokens_count_total),str(tokens_count_unique),experimental_values,token_hash+tokens]) + '\n')
       w_time = (dt.datetime.now() - ww_time).microseconds
     except Exception as e:
       logging.warning('Error on step3 of process_file_contents. '+str(e))
@@ -412,8 +412,8 @@ def process_regular_folder(process_num, zip_file, proj_id, proj_path, proj_url, 
     try:
       times = process_file_contents(file_string, proj_id, file_id, zip_file, file_path, file_bytes,
                       proj_url, FILE_tokens_file, FILE_stats_file, logging)
-    except:
-      logging.warning('Unable to process file %s.' % (os.path.join(proj_path,file_path)))
+    except Exception as e:
+      logging.warning('Unable to process file %s. %s' % (os.path.join(proj_path,file_path),e))
       continue
 
     string_time += times[0]
@@ -791,5 +791,4 @@ if __name__ == '__main__':
 
   p_elapsed = dt.datetime.now() - p_start
   print "*** All done. %s files in %s" % (file_count, p_elapsed)
-
 
